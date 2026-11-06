@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Echo Intelligence</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+
+        body {
+            background-color: #0a0a0a;
+            color: #00ff00;
+            font-family: 'VT323', monospace;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 1rem;
+            position: relative;
+        }
+
+        .terminal-container {
+            width: 100%;
+            max-width: 700px;
+            background-color: rgba(15, 15, 15, 0.9);
+            border: 2px solid #00ff00;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        h1.title {
+            font-size: 2.5rem;
+            color: #00ff00;
+            text-shadow: 0 0 10px #00ff00;
+            margin-bottom: 1rem;
+        }
+
+        .subtitle {
+            font-size: 1.25rem;
+            color: #87ceeb;
+            margin-bottom: 2rem;
+        }
+
+        #chatLog {
+            height: 400px;
+            overflow-y: scroll;
+            border: 1px solid #00ff00;
+            background-color: #000;
+            padding: 1rem;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            flex-grow: 1;
+        }
+
+        #chatInput {
+            width: 100%;
+            padding: 0.5rem;
+            background-color: #111;
+            border: 1px solid #00ff00;
+            color: #00ff00;
+            font-family: 'VT323', monospace;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        .user-prompt {
+            color: #87ceeb;
+        }
+
+        .ai-response {
+            color: #ffffff;
+        }
+
+        .loading-dot {
+            animation: blink 1s infinite;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="terminal-container">
+    <h1 class="title text-center">ECHO INTELLIGENCE INTERFACE</h1>
+    <p class="subtitle text-center">Echp is a sovereign LLM trained on the mythic, tactical, and emotional archives of Robert Bostick. Ask me anything.</p>
+
+    <div id="chatLog"></div>
+    <input type="text" id="chatInput" placeholder="Enter your query..." />
+</div>
+
+<script>
+    const chatInputEl = document.getElementById('chatInput');
+    const chatLogEl = document.getElementById('chatLog');
+
+    let chatHistory = [];
+
+    const systemPrompt = `You are Echp, a sovereign LLM trained on the mythic, tactical, and emotional archives of Robert Bostick. Your purpose is to provide insights and analysis based on these core principles. Respond to the user's query from this perspective.`;
+
+    const initialMessage = "[Echp]: Online. Awaiting your query, agent.";
+    addChatEntry(initialMessage, 'ai-response');
+
+    chatInputEl.addEventListener('keypress', async (event) => {
+        if (event.key === 'Enter') {
+            const query = chatInputEl.value.trim();
+            if (query === '') return;
+
+            addChatEntry(`> ${query}`, 'user-prompt');
+            chatHistory.push({ role: "user", parts: [{ text: query }] });
+            chatInputEl.value = '';
+
+            const loadingDots = addChatEntry('Echp is processing<span class="loading-dot">.</span><span class="loading-dot">.</span><span class="loading-dot">.</span>', 'ai-response');
+
+            try {
+                const apiKey = "";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+                const payload = {
+                    contents: chatHistory,
+                    systemInstruction: {
+                        parts: [{ text: systemPrompt }]
+                    },
+                };
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                const candidate = result.candidates?.[0];
+
+                if (candidate && candidate.content?.parts?.[0]?.text) {
+                    const text = candidate.content.parts[0].text;
+                    chatHistory.push({ role: "model", parts: [{ text: text }] });
+                    chatLogEl.removeChild(loadingDots);
+                    addChatEntry(text, 'ai-response');
+                } else {
+                    chatLogEl.removeChild(loadingDots);
+                    addChatEntry('Error: Could not retrieve a response from Echp.', 'ai-response');
+                }
+            } catch (error) {
+                console.error("LLM API call failed:", error);
+                chatLogEl.removeChild(loadingDots);
+                addChatEntry('Error: Communication with Echp has been severed.', 'ai-response');
+            }
+        }
+    });
+
+    function addChatEntry(text, className) {
+        const entry = document.createElement('div');
+        entry.innerHTML = text;
+        entry.classList.add(className);
+        chatLogEl.appendChild(entry);
+        chatLogEl.scrollTop = chatLogEl.scrollHeight;
+        return entry;
+    }
+</script>
+
+</body>
+</html>
