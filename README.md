@@ -11,3 +11,5 @@ Nova Echo AI simulator and IOC monitor, built with Copilot and Gemini as HTML si
 ## Status
 
 Working sims and a working monitor script. The monitor's `match_iocs()` implementation was added Nov 5, 2026 (it was missing from the original paste and the script crashed without it). Real IOCs and a Gemini API key are still needed before either piece does live work.
+
+AI-generated video: the Echp demo video's narration is an AI voice speaking as my avatar — made with AI for fun to walk through Echp. That's not my real voice.
